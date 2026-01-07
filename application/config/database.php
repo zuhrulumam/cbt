@@ -6,10 +6,10 @@ $query_builder = TRUE;
 
 $db['default'] = array(
     'dsn'	=> '',
-    'hostname' => '',
-    'username' => '',
-    'password' => '',
-    'database' => '',
+    'hostname' => 'my-websites_cbt:3306',
+    'username' => 'mysql',
+    'password' => 'bec8e4ce2bbef51f8fe3',
+    'database' => 'cby',
     'dbdriver' => 'mysqli',
     'dbprefix' => '',
     'pconnect' => FALSE,
