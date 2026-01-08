@@ -6,7 +6,7 @@ COPY . /var/www/html
 # Install PHP extensions
 RUN docker-php-ext-install pdo_mysql mysqli && a2enmod rewrite
 
-# Create all possible session/cache/upload folders CodeIgniter might need
+# Create all possible session/cache/upload folders
 RUN mkdir -p /var/www/html/application/sessions \
     && mkdir -p /var/www/html/application/cache \
     && mkdir -p /var/www/html/application/logs \
@@ -28,5 +28,9 @@ RUN mkdir -p /var/www/html/application/sessions \
 # Set PHP session save path globally
 RUN echo "session.save_path = \"/tmp/ci_sessions\"" > /usr/local/etc/php/conf.d/sessions.ini
 
-# Enable Apache .htaccess
-RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf
+# Enable Apache .htaccess and headers module
+RUN sed -i '/<Directory \/var\/www\/>/,/<\/Directory>/ s/AllowOverride None/AllowOverride All/' /etc/apache2/apache2.conf \
+    && a2enmod headers
+
+# Force HTTPS detection for proxied requests (EasyPanel uses reverse proxy)
+RUN echo "SetEnvIf X-Forwarded-Proto https HTTPS=on" >> /etc/apache2/apache2.conf
