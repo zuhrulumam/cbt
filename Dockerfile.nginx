@@ -1,18 +1,21 @@
 FROM php:8.1-fpm
 
-# Install dependencies
-RUN apt-get update && apt-get install -y \
-    nginx \
+RUN apt-get update && apt-get install -y nginx \
     && docker-php-ext-install pdo_mysql mysqli
 
-# Copy app files
 COPY . /var/www/html
 
-# Create nginx config for CodeIgniter
+# Nginx config with HTTPS detection
 RUN echo 'server { \n\
     listen 80; \n\
     root /var/www/html; \n\
     index index.php index.html; \n\
+    \n\
+    # HTTPS detection from proxy \n\
+    set $https_status ""; \n\
+    if ($http_x_forwarded_proto = "https") { \n\
+        set $https_status "on"; \n\
+    } \n\
     \n\
     location / { \n\
         try_files $uri $uri/ /index.php?$query_string; \n\
@@ -22,6 +25,7 @@ RUN echo 'server { \n\
         fastcgi_pass 127.0.0.1:9000; \n\
         fastcgi_index index.php; \n\
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \n\
+        fastcgi_param HTTPS $https_status; \n\
         include fastcgi_params; \n\
     } \n\
     \n\
@@ -30,7 +34,6 @@ RUN echo 'server { \n\
     } \n\
 }' > /etc/nginx/sites-available/default
 
-# Permissions
 RUN mkdir -p /var/www/html/application/sessions \
     && mkdir -p /var/www/html/application/cache \
     && mkdir -p /var/www/html/application/logs \
@@ -42,10 +45,10 @@ RUN mkdir -p /var/www/html/application/sessions \
     && chmod -R 777 /var/www/html/application/config \
     && chmod -R 777 /tmp/ci_sessions
 
-# PHP config
-RUN echo "session.save_path = \"/tmp/ci_sessions\"" > /usr/local/etc/php/conf.d/sessions.ini
+RUN echo "session.save_path = \"/tmp/ci_sessions\"" > /usr/local/etc/php/conf.d/sessions.ini \
+    && echo "display_errors = On" >> /usr/local/etc/php/conf.d/error-reporting.ini \
+    && echo "error_reporting = E_ALL" >> /usr/local/etc/php/conf.d/error-reporting.ini
 
-# Start script
 RUN echo '#!/bin/bash\nphp-fpm -D\nnginx -g "daemon off;"' > /start.sh \
     && chmod +x /start.sh
 
